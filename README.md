@@ -121,24 +121,24 @@ convective term is solved using Newton iterations.
 
 The incompressible Navier–Stokes equations on the domain $\Omega$ are:
 
-### Momentum equation
+## Momentum equation
 
-$$
+```math
 \frac{\partial \mathbf{u}}{\partial t}
 + (\mathbf{u}\cdot\nabla)\mathbf{u}
 - \nu \Delta \mathbf{u}
 + \nabla p
 = 0
 \qquad \text{in } \Omega
-$$
+```
 
-### Continuity equation
+## Continuity equation
 
-$$
+```math
 \nabla \cdot \mathbf{u}
 = 0
 \qquad \text{in } \Omega
-$$
+```
 
 where:
 
