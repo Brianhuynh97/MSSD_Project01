@@ -40,7 +40,10 @@ def render_case_figure(x, y, u, v, p, speed, reynolds_number: int, quiver_stride
         v[::stride, ::stride],
         color="white",
         pivot="mid",
-        scale=12,
+        angles="xy",
+        scale_units="xy",
+        scale=8,
+        width=0.006,
     )
     speed_ax.set_title(f"Re = {reynolds_number}")
     speed_ax.set_aspect("equal")
