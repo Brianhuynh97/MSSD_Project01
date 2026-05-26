@@ -5,6 +5,7 @@ import inspect
 import json
 import math
 from pathlib import Path
+from typing import Any, TypeAlias, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -17,6 +18,8 @@ RESULTS_DIR = Path("results/verification")
 FIGURES_DIR = Path("figures/verification")
 KINEMATIC_VISCOSITY = 1.0
 PRESSURE_PENALTY = 1.0e-6
+RateValue: TypeAlias = float | str
+VerificationRow: TypeAlias = dict[str, int | float | RateValue]
 
 
 def manufactured_velocity(x):
@@ -31,10 +34,19 @@ def manufactured_velocity(x):
 
 
 def manufactured_pressure(x):
-    return 0.0 * x[0]
+    import ufl
+
+    return ufl.as_ufl(0.0) * x[0]
 
 
-def solve_verification_case(nx: int) -> dict[str, float]:
+def _numeric_entry(row: VerificationRow, key: str) -> float:
+    value = row[key]
+    if isinstance(value, str):
+        raise TypeError(f"Expected numeric entry for {key!r}, got string")
+    return float(value)
+
+
+def solve_verification_case(nx: int) -> VerificationRow:
     import ufl
     from basix.ufl import element, mixed_element
     from dolfinx import fem, mesh
@@ -52,36 +64,42 @@ def solve_verification_case(nx: int) -> dict[str, float]:
 
     w = ufl.TrialFunction(mixed_space)
     z = ufl.TestFunction(mixed_space)
-    u, p = ufl.split(w)
-    v, q = ufl.split(z)
+    trial_components = cast(tuple[Any, Any], ufl.split(w))
+    test_components = cast(tuple[Any, Any], ufl.split(z))
+    u = trial_components[0]
+    p = trial_components[1]
+    v = test_components[0]
+    q = test_components[1]
 
     u_exact = manufactured_velocity(x)
     p_exact = manufactured_pressure(x)
-    forcing = -KINEMATIC_VISCOSITY * ufl.div(ufl.grad(u_exact))
+    kinematic_viscosity = ufl.as_ufl(KINEMATIC_VISCOSITY)
+    pressure_penalty = ufl.as_ufl(PRESSURE_PENALTY)
+    forcing = -kinematic_viscosity * ufl.div(ufl.grad(u_exact))
 
-    a = (
-        KINEMATIC_VISCOSITY * ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
-        - ufl.inner(p, ufl.div(v)) * ufl.dx
-        + ufl.inner(q, ufl.div(u)) * ufl.dx
-        + PRESSURE_PENALTY * ufl.inner(p, q) * ufl.dx
-    )
-    L = ufl.inner(forcing, v) * ufl.dx
+    viscous_term = cast(Any, kinematic_viscosity * ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx)
+    pressure_term = cast(Any, ufl.inner(p, ufl.div(v)) * ufl.dx)
+    continuity_term = cast(Any, ufl.inner(q, ufl.div(u)) * ufl.dx)
+    pressure_penalty_term = cast(Any, pressure_penalty * ufl.inner(p, q) * ufl.dx)
 
-    u_exact_function = fem.Function(velocity_space)
+    a = viscous_term - pressure_term + continuity_term + pressure_penalty_term
+    L = cast(Any, ufl.inner(forcing, v) * ufl.dx)
+
+    u_exact_function = cast(Any, fem.Function(velocity_space))
     u_exact_function.interpolate(lambda points: np.vstack(
         [
             math.pi * np.sin(math.pi * points[0]) ** 2 * np.sin(2.0 * math.pi * points[1]),
             -math.pi * np.sin(2.0 * math.pi * points[0]) * np.sin(math.pi * points[1]) ** 2,
         ]
     ))
-    p_exact_function = fem.Function(pressure_space)
+    p_exact_function = cast(Any, fem.Function(pressure_space))
     p_exact_function.x.array[:] = 0.0
 
     facet_dim = domain.topology.dim - 1
     boundary_facets = mesh.locate_entities_boundary(domain, facet_dim, lambda points: np.full(points.shape[1], True))
     velocity_dofs = fem.locate_dofs_topological((mixed_space.sub(0), velocity_space), facet_dim, boundary_facets)
     boundary_conditions = [
-        fem.dirichletbc(u_exact_function, velocity_dofs, mixed_space.sub(0)),
+        fem.dirichletbc(cast(Any, u_exact_function), velocity_dofs, mixed_space.sub(0)),
     ]
 
     problem_kwargs = {
@@ -95,24 +113,23 @@ def solve_verification_case(nx: int) -> dict[str, float]:
         problem_kwargs["petsc_options_prefix"] = f"verification_{nx}_"
     problem = LinearProblem(a, L, **problem_kwargs)
     problem.solver.setConvergenceHistory()
-    solution = problem.solve()
+    solution = cast(Any, problem.solve())
     solution.x.scatter_forward()
 
     velocity_h = solution.sub(0).collapse()
     pressure_h = solution.sub(1).collapse()
 
-    velocity_l2_error_local = fem.assemble_scalar(
-        fem.form(ufl.inner(velocity_h - u_exact, velocity_h - u_exact) * ufl.dx)
+    velocity_l2_form = cast(Any, fem.form(ufl.inner(velocity_h - u_exact, velocity_h - u_exact) * ufl.dx))
+    velocity_h1_form = cast(
+        Any, fem.form(ufl.inner(ufl.grad(velocity_h - u_exact), ufl.grad(velocity_h - u_exact)) * ufl.dx)
     )
-    velocity_h1_error_local = fem.assemble_scalar(
-        fem.form(ufl.inner(ufl.grad(velocity_h - u_exact), ufl.grad(velocity_h - u_exact)) * ufl.dx)
-    )
-    pressure_l2_error_local = fem.assemble_scalar(
-        fem.form(ufl.inner(pressure_h - p_exact, pressure_h - p_exact) * ufl.dx)
-    )
-    divergence_l2_error_local = fem.assemble_scalar(
-        fem.form(ufl.inner(ufl.div(velocity_h), ufl.div(velocity_h)) * ufl.dx)
-    )
+    pressure_l2_form = cast(Any, fem.form(ufl.inner(pressure_h - p_exact, pressure_h - p_exact) * ufl.dx))
+    divergence_l2_form = cast(Any, fem.form(ufl.inner(ufl.div(velocity_h), ufl.div(velocity_h)) * ufl.dx))
+
+    velocity_l2_error_local = fem.assemble_scalar(velocity_l2_form)
+    velocity_h1_error_local = fem.assemble_scalar(velocity_h1_form)
+    pressure_l2_error_local = fem.assemble_scalar(pressure_l2_form)
+    divergence_l2_error_local = fem.assemble_scalar(divergence_l2_form)
 
     velocity_l2_error = math.sqrt(domain.comm.allreduce(velocity_l2_error_local, op=MPI.SUM))
     velocity_h1_error = math.sqrt(domain.comm.allreduce(velocity_h1_error_local, op=MPI.SUM))
@@ -136,7 +153,7 @@ def solve_verification_case(nx: int) -> dict[str, float]:
     }
 
 
-def add_observed_rates(rows: list[dict[str, float]]) -> None:
+def add_observed_rates(rows: list[VerificationRow]) -> None:
     rate_fields = [
         ("velocity_l2_error", "velocity_l2_rate"),
         ("velocity_h1_seminorm_error", "velocity_h1_rate"),
@@ -145,20 +162,24 @@ def add_observed_rates(rows: list[dict[str, float]]) -> None:
     ]
     for coarse, fine in zip(rows[:-1], rows[1:]):
         for error_key, rate_key in rate_fields:
+            coarse_error = _numeric_entry(coarse, error_key)
+            fine_error = _numeric_entry(fine, error_key)
+            coarse_h = _numeric_entry(coarse, "mesh_size_h")
+            fine_h = _numeric_entry(fine, "mesh_size_h")
             if (
-                coarse[error_key] > 0.0
-                and fine[error_key] > 0.0
-                and math.isfinite(coarse[error_key])
-                and math.isfinite(fine[error_key])
+                coarse_error > 0.0
+                and fine_error > 0.0
+                and math.isfinite(coarse_error)
+                and math.isfinite(fine_error)
             ):
-                coarse[rate_key] = math.log(coarse[error_key] / fine[error_key]) / math.log(
-                    coarse["mesh_size_h"] / fine["mesh_size_h"]
+                coarse[rate_key] = math.log(coarse_error / fine_error) / math.log(
+                    coarse_h / fine_h
                 )
             else:
                 coarse[rate_key] = ""
 
 
-def write_csv(rows: list[dict[str, float]]) -> Path:
+def write_csv(rows: list[VerificationRow]) -> Path:
     csv_path = RESULTS_DIR / "verification_convergence.csv"
     with csv_path.open("w", encoding="utf-8", newline="") as stream:
         writer = csv.DictWriter(
@@ -183,15 +204,17 @@ def write_csv(rows: list[dict[str, float]]) -> Path:
     return csv_path
 
 
-def write_plot(rows: list[dict[str, float]]) -> Path:
+def write_plot(rows: list[VerificationRow]) -> Path:
     FIGURES_DIR.mkdir(parents=True, exist_ok=True)
     figure_path = FIGURES_DIR / "verification_convergence.png"
-    h_values = np.array([row["mesh_size_h"] for row in rows])
+    h_values = np.array([_numeric_entry(row, "mesh_size_h") for row in rows], dtype=float)
     tiny = np.finfo(float).tiny
-    velocity_l2_values = np.maximum([row["velocity_l2_error"] for row in rows], tiny)
-    velocity_h1_values = np.maximum([row["velocity_h1_seminorm_error"] for row in rows], tiny)
-    pressure_l2_values = np.maximum([row["pressure_l2_error"] for row in rows], tiny)
-    divergence_values = np.maximum([row["divergence_l2_error"] for row in rows], tiny)
+    velocity_l2_values = np.maximum([_numeric_entry(row, "velocity_l2_error") for row in rows], tiny)
+    velocity_h1_values = np.maximum(
+        [_numeric_entry(row, "velocity_h1_seminorm_error") for row in rows], tiny
+    )
+    pressure_l2_values = np.maximum([_numeric_entry(row, "pressure_l2_error") for row in rows], tiny)
+    divergence_values = np.maximum([_numeric_entry(row, "divergence_l2_error") for row in rows], tiny)
 
     fig, ax = plt.subplots(figsize=(7, 5))
     ax.loglog(h_values, velocity_l2_values, "o-", label=r"$\|u-u_h\|_{L^2}$")
@@ -212,14 +235,14 @@ def write_plot(rows: list[dict[str, float]]) -> Path:
     reference_h = np.array([h_values[-2], h_values[-1]])
     ax.loglog(
         reference_h,
-        0.8 * rows[-2]["velocity_h1_seminorm_error"] * (reference_h / reference_h[0]) ** 2,
+        0.8 * _numeric_entry(rows[-2], "velocity_h1_seminorm_error") * (reference_h / reference_h[0]) ** 2,
         "k--",
         linewidth=1.0,
         label=r"$\mathcal{O}(h^2)$",
     )
     ax.loglog(
         reference_h,
-        1.2 * rows[-2]["velocity_l2_error"] * (reference_h / reference_h[0]) ** 3,
+        1.2 * _numeric_entry(rows[-2], "velocity_l2_error") * (reference_h / reference_h[0]) ** 3,
         "k:",
         linewidth=1.0,
         label=r"$\mathcal{O}(h^3)$",
@@ -237,11 +260,11 @@ def write_plot(rows: list[dict[str, float]]) -> Path:
     return figure_path
 
 
-def write_summary(rows: list[dict[str, float]], csv_path: Path, figure_path: Path) -> Path:
-    finite_velocity_l2_rates = [row["velocity_l2_rate"] for row in rows if row["velocity_l2_rate"] != ""]
-    finite_velocity_h1_rates = [row["velocity_h1_rate"] for row in rows if row["velocity_h1_rate"] != ""]
-    finite_pressure_rates = [row["pressure_l2_rate"] for row in rows if row["pressure_l2_rate"] != ""]
-    finite_divergence_rates = [row["divergence_l2_rate"] for row in rows if row["divergence_l2_rate"] != ""]
+def write_summary(rows: list[VerificationRow], csv_path: Path, figure_path: Path) -> Path:
+    finite_velocity_l2_rates = [float(row["velocity_l2_rate"]) for row in rows if row["velocity_l2_rate"] != ""]
+    finite_velocity_h1_rates = [float(row["velocity_h1_rate"]) for row in rows if row["velocity_h1_rate"] != ""]
+    finite_pressure_rates = [float(row["pressure_l2_rate"]) for row in rows if row["pressure_l2_rate"] != ""]
+    finite_divergence_rates = [float(row["divergence_l2_rate"]) for row in rows if row["divergence_l2_rate"] != ""]
     summary_path = RESULTS_DIR / "verification_convergence.json"
     with summary_path.open("w", encoding="utf-8") as stream:
         json.dump(

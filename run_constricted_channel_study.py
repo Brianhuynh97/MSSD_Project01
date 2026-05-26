@@ -4,6 +4,7 @@ import csv
 import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Any, TypeAlias, cast
 
 import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
@@ -27,6 +28,7 @@ MEAN_INLET_SPEED = 1.0
 KINEMATIC_VISCOSITY = 0.02
 PRESSURE_PENALTY = 1.0e-8
 GRID_SHAPE = (220, 70)
+SampleGrid: TypeAlias = dict[str, np.ndarray]
 
 
 @dataclass(frozen=True)
@@ -56,7 +58,6 @@ def build_stokes_problem(domain, facet_tags, variant_name: str):
     from basix.ufl import element, mixed_element
     from dolfinx import fem
     from dolfinx.fem.petsc import LinearProblem
-    from petsc4py import PETSc
 
     velocity_element = element("Lagrange", domain.basix_cell(), 2, shape=(2,))
     pressure_element = element("Lagrange", domain.basix_cell(), 1)
@@ -65,11 +66,15 @@ def build_stokes_problem(domain, facet_tags, variant_name: str):
 
     trial = ufl.TrialFunction(mixed_space)
     test = ufl.TestFunction(mixed_space)
-    u, p = ufl.split(trial)
-    v, q = ufl.split(test)
+    trial_components = cast(tuple[Any, Any], ufl.split(trial))
+    test_components = cast(tuple[Any, Any], ufl.split(test))
+    u = trial_components[0]
+    p = trial_components[1]
+    v = test_components[0]
+    q = test_components[1]
 
     x = ufl.SpatialCoordinate(domain)
-    inlet_velocity = fem.Function(velocity_space)
+    inlet_velocity = cast(Any, fem.Function(velocity_space))
     inlet_velocity.interpolate(
         lambda points: np.vstack(
             [
@@ -82,7 +87,7 @@ def build_stokes_problem(domain, facet_tags, variant_name: str):
             ]
         )
     )
-    zero_velocity = fem.Function(velocity_space)
+    zero_velocity = cast(Any, fem.Function(velocity_space))
     zero_velocity.x.array[:] = 0.0
 
     facet_dim = domain.topology.dim - 1
@@ -91,19 +96,21 @@ def build_stokes_problem(domain, facet_tags, variant_name: str):
     inlet_dofs = fem.locate_dofs_topological((mixed_space.sub(0), velocity_space), facet_dim, inlet_facets)
     wall_dofs = fem.locate_dofs_topological((mixed_space.sub(0), velocity_space), facet_dim, wall_facets)
 
-    bcs = [
-        fem.dirichletbc(inlet_velocity, inlet_dofs, mixed_space.sub(0)),
-        fem.dirichletbc(zero_velocity, wall_dofs, mixed_space.sub(0)),
-    ]
+    dirichlet_bc = cast(Any, fem.dirichletbc)
 
-    a = (
-        KINEMATIC_VISCOSITY * ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
-        - ufl.inner(p, ufl.div(v)) * ufl.dx
-        + ufl.inner(q, ufl.div(u)) * ufl.dx
-        + PRESSURE_PENALTY * ufl.inner(p, q) * ufl.dx
-    )
-    zero_force = fem.Constant(domain, PETSc.ScalarType((0.0, 0.0)))
-    L = ufl.inner(zero_force, v) * ufl.dx
+    bcs = [
+    dirichlet_bc(cast(Any, inlet_velocity), inlet_dofs, mixed_space.sub(0)),
+    dirichlet_bc(cast(Any, zero_velocity), wall_dofs, mixed_space.sub(0)),
+]
+    kinematic_viscosity = ufl.as_ufl(KINEMATIC_VISCOSITY)
+    pressure_penalty = ufl.as_ufl(PRESSURE_PENALTY)
+    viscous_term = cast(Any, kinematic_viscosity * ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx)
+    pressure_term = cast(Any, ufl.inner(p, ufl.div(v)) * ufl.dx)
+    continuity_term = cast(Any, ufl.inner(q, ufl.div(u)) * ufl.dx)
+    pressure_penalty_term = cast(Any, pressure_penalty * ufl.inner(p, q) * ufl.dx)
+    a = viscous_term - pressure_term + continuity_term + pressure_penalty_term
+    zero_force = fem.Constant(domain, np.array((0.0, 0.0), dtype=np.float64))
+    L = cast(Any, ufl.inner(zero_force, v) * ufl.dx)
 
     problem = LinearProblem(
         a,
@@ -124,7 +131,8 @@ def solve_variant(mesh_file: Path, variant_name: str, notch_radius: float):
 
     domain, cell_tags, facet_tags = read_tagged_mesh(mesh_file)
     problem, mixed_space = build_stokes_problem(domain, facet_tags, variant_name)
-    solution = problem.solve()
+    #solution = problem.solve()
+    solution = cast(Any, problem.solve())
     solution.x.scatter_forward()
 
     velocity = solution.sub(0).collapse()
@@ -132,18 +140,27 @@ def solve_variant(mesh_file: Path, variant_name: str, notch_radius: float):
 
     ds = ufl.Measure("ds", domain=domain, subdomain_data=facet_tags)
     n = ufl.FacetNormal(domain)
-    inlet_length = fem.assemble_scalar(fem.form(1.0 * ds(INLET_TAG)))
-    outlet_length = fem.assemble_scalar(fem.form(1.0 * ds(OUTLET_TAG)))
-    inlet_pressure_integral = fem.assemble_scalar(fem.form(pressure * ds(INLET_TAG)))
-    outlet_pressure_integral = fem.assemble_scalar(fem.form(pressure * ds(OUTLET_TAG)))
-    outlet_flux = fem.assemble_scalar(fem.form(ufl.dot(velocity, n) * ds(OUTLET_TAG)))
+    inlet_length_form = cast(Any, fem.form(1.0 * ds(INLET_TAG)))
+    outlet_length_form = cast(Any, fem.form(1.0 * ds(OUTLET_TAG)))
+    inlet_pressure_form = cast(Any, fem.form(pressure * ds(INLET_TAG)))
+    outlet_pressure_form = cast(Any, fem.form(pressure * ds(OUTLET_TAG)))
+    outlet_flux_form = cast(Any, fem.form(ufl.dot(velocity, n) * ds(OUTLET_TAG)))
 
-    pressure_drop = float(inlet_pressure_integral / inlet_length - outlet_pressure_integral / outlet_length)
-    outlet_flow_rate = float(outlet_flux)
+    inlet_length = fem.assemble_scalar(inlet_length_form)
+    outlet_length = fem.assemble_scalar(outlet_length_form)
+    inlet_pressure_integral = fem.assemble_scalar(inlet_pressure_form)
+    outlet_pressure_integral = fem.assemble_scalar(outlet_pressure_form)
+    outlet_flux = fem.assemble_scalar(outlet_flux_form)
+
+    pressure_drop = float(np.real(inlet_pressure_integral / inlet_length - outlet_pressure_integral / outlet_length))
+    outlet_flow_rate = float(np.real(outlet_flux))
 
     sample = sample_velocity_pressure(domain, velocity, pressure, GRID_SHAPE)
-    speed_sample = np.sqrt(sample["u"] ** 2 + sample["v"] ** 2)
-    max_speed = float(np.nanmax(speed_sample))
+    if sample is None:
+        max_speed = float("nan")
+    else:
+        speed_sample = np.sqrt(sample["u"] ** 2 + sample["v"] ** 2)
+        max_speed = float(np.nanmax(speed_sample))
 
     tdim = domain.topology.dim
     domain.topology.create_connectivity(tdim, 0)
@@ -166,12 +183,12 @@ def solve_variant(mesh_file: Path, variant_name: str, notch_radius: float):
     return result, domain, cell_tags, facet_tags, velocity, pressure, sample
 
 
-def sample_velocity_pressure(domain, velocity, pressure, grid_shape: tuple[int, int]):
+def sample_velocity_pressure(domain, velocity, pressure, grid_shape: tuple[int, int]) -> SampleGrid | None:
     from dolfinx import geometry
 
     nx, ny = grid_shape
-    xs = np.linspace(0.0, CHANNEL_LENGTH, nx)
-    ys = np.linspace(0.0, CHANNEL_HEIGHT, ny)
+    xs = np.linspace(0.0, CHANNEL_LENGTH, num=int(nx))
+    ys = np.linspace(0.0, CHANNEL_HEIGHT, num=int(ny))
     xy = np.array([[x_value, y_value] for y_value in ys for x_value in xs], dtype=np.float64)
     points = np.column_stack([xy, np.zeros(len(xy), dtype=np.float64)])
     tree = geometry.bb_tree(domain, domain.topology.dim)
@@ -253,7 +270,7 @@ def plot_mesh_and_tags(domain, facet_tags, result: StudyResult):
     plt.close(fig)
 
 
-def plot_fields(sample: dict[str, np.ndarray], result: StudyResult):
+def plot_fields(sample: SampleGrid, result: StudyResult):
     speed = np.sqrt(sample["u"] ** 2 + sample["v"] ** 2)
     centered_pressure = sample["p"] - np.nanmean(sample["p"])
 

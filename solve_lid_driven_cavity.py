@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from dataclasses import replace
+from typing import Any, cast
 
 from cavity_boundary_conditions import top_boundary, wall_boundary
 from cavity_solution_sampling import configure_cache_dirs, sample_functions_on_grid
@@ -25,8 +26,8 @@ def build_domain_and_spaces(parameters):
 def build_state_functions(mixed_space, initial_guess=None):
     from dolfinx import fem
 
-    current_state = fem.Function(mixed_space)
-    previous_state = fem.Function(mixed_space)
+    current_state = cast(Any, fem.Function(mixed_space))
+    previous_state = cast(Any, fem.Function(mixed_space))
     if initial_guess is not None:
         previous_state.x.array[:] = initial_guess
         current_state.x.array[:] = initial_guess
@@ -37,13 +38,13 @@ def build_boundary_conditions(domain, mixed_space, velocity_space, pressure_spac
     import numpy as np
     from dolfinx import fem, mesh
 
-    lid_velocity = fem.Function(velocity_space)
+    lid_velocity = cast(Any, fem.Function(velocity_space))
     lid_velocity.interpolate(
         lambda x: np.vstack((np.full(x.shape[1], parameters.lid_velocity), np.zeros(x.shape[1])))
     )
-    zero_velocity = fem.Function(velocity_space)
+    zero_velocity = cast(Any, fem.Function(velocity_space))
     zero_velocity.x.array[:] = 0.0
-    zero_pressure = fem.Function(pressure_space)
+    zero_pressure = cast(Any, fem.Function(pressure_space))
     zero_pressure.x.array[:] = 0.0
 
     facet_dim = domain.topology.dim - 1
@@ -55,34 +56,46 @@ def build_boundary_conditions(domain, mixed_space, velocity_space, pressure_spac
         (mixed_space.sub(1), pressure_space),
         lambda x: np.logical_and(np.isclose(x[0], 0.0), np.isclose(x[1], 0.0)),
     )
+    dirichlet_bc = cast(Any, fem.dirichletbc)
     return [
-        fem.dirichletbc(lid_velocity, lid_dofs, mixed_space.sub(0)),
-        fem.dirichletbc(zero_velocity, wall_dofs, mixed_space.sub(0)),
-        fem.dirichletbc(zero_pressure, pressure_dofs, mixed_space.sub(1)),
+        dirichlet_bc(cast(Any, lid_velocity), lid_dofs, mixed_space.sub(0)),
+        dirichlet_bc(cast(Any, zero_velocity), wall_dofs, mixed_space.sub(0)),
+        dirichlet_bc(cast(Any, zero_pressure), pressure_dofs, mixed_space.sub(1)),
     ]
 
 
 def build_residual_and_jacobian(domain, mixed_space, current_state, previous_state, parameters, reynolds_number):
     import ufl
     from dolfinx import fem
-    from petsc4py import PETSc
 
-    u, p = ufl.split(current_state)
-    u_previous, _ = ufl.split(previous_state)
-    v, q = ufl.TestFunctions(mixed_space)
+    state_components = cast(tuple[Any, Any], ufl.split(current_state))
+    previous_components = cast(tuple[Any, Any], ufl.split(previous_state))
+    test_components = cast(tuple[Any, Any], ufl.TestFunctions(mixed_space))
+    u = state_components[0]
+    p = state_components[1]
+    u_previous = previous_components[0]
+    v = test_components[0]
+    q = test_components[1]
     dw = ufl.TrialFunction(mixed_space)
 
-    dt = fem.Constant(domain, PETSc.ScalarType(parameters.time_step))
-    nu = fem.Constant(domain, PETSc.ScalarType(parameters.lid_velocity / reynolds_number))
-    pressure_penalty = fem.Constant(domain, PETSc.ScalarType(1.0e-8))
+    dt = cast(Any, fem.Constant(domain, float(parameters.time_step)))
+    nu = cast(Any, fem.Constant(domain, float(parameters.lid_velocity / reynolds_number)))
+    pressure_penalty = cast(Any, fem.Constant(domain, 1.0e-8))
+
+    time_term = cast(Any, (1.0 / dt) * ufl.inner(u - u_previous, v) * ufl.dx)
+    viscous_term = cast(Any, nu * ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx)
+    convection_term = cast(Any, ufl.inner(ufl.grad(u) * u, v) * ufl.dx)
+    pressure_term = cast(Any, ufl.inner(p, ufl.div(v)) * ufl.dx)
+    continuity_term = cast(Any, ufl.inner(q, ufl.div(u)) * ufl.dx)
+    pressure_penalty_term = cast(Any, pressure_penalty * ufl.inner(p, q) * ufl.dx)
 
     residual = (
-        (1.0 / dt) * ufl.inner(u - u_previous, v) * ufl.dx
-        + nu * ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
-        + ufl.inner(ufl.grad(u) * u, v) * ufl.dx
-        - ufl.inner(p, ufl.div(v)) * ufl.dx
-        + ufl.inner(q, ufl.div(u)) * ufl.dx
-        + pressure_penalty * ufl.inner(p, q) * ufl.dx
+        time_term
+        + viscous_term
+        + convection_term
+        - pressure_term
+        + continuity_term
+        + pressure_penalty_term
     )
     jacobian = ufl.derivative(residual, current_state, dw)
     return residual, jacobian
