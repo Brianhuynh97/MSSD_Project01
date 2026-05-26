@@ -38,6 +38,10 @@ and animations reproduce the classical lid-driven cavity benchmark behavior.
 - `run_cavity_convergence.py`  
   Performs the mesh convergence study.
 
+- `run_verification_convergence.py`  
+  Solves a manufactured steady Stokes problem on a sequence of meshes and
+  computes exact error norms for verification.
+
 - `cavity_solver_config.txt`  
   Stores Reynolds numbers, mesh size, time step, solver tolerances,
   PETSc configuration, and plotting settings.
@@ -196,6 +200,12 @@ python plot_cavity_ghia_comparison.py
 python run_cavity_convergence.py
 ```
 
+## Run verification convergence study
+
+```bash
+python run_verification_convergence.py
+```
+
 ---
 
 # Results
@@ -258,6 +268,74 @@ Convergence outputs:
 - `results/convergence/convergence_summary.csv`
 - `results/convergence/convergence_summary.json`
 - `figures/convergence/convergence_summary.png`
+
+Verification outputs:
+
+- `results/verification/verification_convergence.csv`
+- `results/verification/verification_convergence.json`
+- `figures/verification/verification_convergence.png`
+
+---
+
+# Verification Study
+
+The project also includes a manufactured steady Stokes verification problem for
+the Taylor–Hood `P2/P1` element pair.
+
+## Mesh levels
+
+The verification script uses at least four uniform unit-square meshes:
+
+- `nx = 8`
+- `nx = 16`
+- `nx = 32`
+- `nx = 64`
+
+The mesh-size measure is defined as:
+
+```text
+h = 1 / nx
+```
+
+for a unit square subdivided uniformly into `nx` cells per coordinate
+direction.
+
+## Error norms
+
+The script computes:
+
+- velocity `L2` error: `||u - uh||L2`
+- velocity `H1` seminorm error: `|u - uh|H1`
+- pressure `L2` error: `||p - ph||L2`
+- divergence diagnostic: `||div uh||L2`
+
+## Expected convergence behavior
+
+For a smooth Stokes solution discretized with Taylor–Hood `P2/P1` elements on
+quasi-uniform meshes, the standard expectation is:
+
+- `||u - uh||L2 = O(h^3)`
+- `|u - uh|H1 = O(h^2)`
+- `||p - ph||L2 = O(h^2)`
+
+These are the rates the verification study compares against. The divergence
+quantity is included as a diagnostic rather than the main theoretical target.
+
+## Current observed rates
+
+From the current `8 -> 16 -> 32 -> 64` study, the observed rates are:
+
+- velocity `L2`: about `3.00`
+- velocity `H1` seminorm: about `1.98`
+- pressure `L2`: about `3.60`
+- divergence diagnostic: about `1.96`
+
+The velocity rates match the standard Taylor–Hood expectation very closely.
+The pressure rate is higher than the generic `P1` expectation because this
+manufactured verification case uses an exact zero-pressure field together with
+a small pressure penalty to remove the nullspace. That behavior is specific to
+this verification setup and should not be treated as a universal cavity-flow
+pressure rate.
 
 ---
 

@@ -3,8 +3,12 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TypeAlias
 
 import numpy as np
+
+
+ParsedValue: TypeAlias = int | float | str | list[str]
 
 
 @dataclass
@@ -25,7 +29,7 @@ class Parameters:
     gif_fps: int
 
 
-def _parse_value(raw: str):
+def _parse_value(raw: str) -> ParsedValue:
     text = raw.strip()
     if "," in text:
         return [item.strip() for item in text.split(",") if item.strip()]
@@ -37,8 +41,42 @@ def _parse_value(raw: str):
     return text
 
 
+def _require_value(values: dict[str, ParsedValue], key: str) -> ParsedValue:
+    if key not in values:
+        raise KeyError(f"Missing required parameter: {key}")
+    return values[key]
+
+
+def _require_int(values: dict[str, ParsedValue], key: str) -> int:
+    value = _require_value(values, key)
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError(f"Expected integer value for {key!r}, got {type(value).__name__}")
+    return value
+
+
+def _require_float(values: dict[str, ParsedValue], key: str) -> float:
+    value = _require_value(values, key)
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise TypeError(f"Expected float value for {key!r}, got {type(value).__name__}")
+    return float(value)
+
+
+def _require_str(values: dict[str, ParsedValue], key: str) -> str:
+    value = _require_value(values, key)
+    if not isinstance(value, str):
+        raise TypeError(f"Expected string value for {key!r}, got {type(value).__name__}")
+    return value
+
+
+def _require_str_list(values: dict[str, ParsedValue], key: str) -> list[str]:
+    value = _require_value(values, key)
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        raise TypeError(f"Expected comma-separated list for {key!r}, got {type(value).__name__}")
+    return value
+
+
 def read_parameters(filename: str) -> Parameters:
-    values: dict[str, object] = {}
+    values: dict[str, ParsedValue] = {}
     for line in Path(filename).read_text(encoding="utf-8").splitlines():
         head = line.split("#", 1)[0].strip()
         if not head:
@@ -46,22 +84,22 @@ def read_parameters(filename: str) -> Parameters:
         key, raw_value = [part.strip() for part in head.split("=", 1)]
         values[key] = _parse_value(raw_value)
 
-    reynolds_numbers = [int(value) for value in values["reynolds_numbers"]]
+    reynolds_numbers = [int(value) for value in _require_str_list(values, "reynolds_numbers")]
     return Parameters(
-        mesh_cells=int(values["mesh_cells"]),
-        sample_points=int(values["sample_points"]),
-        time_step=float(values["time_step"]),
-        final_time=float(values["final_time"]),
-        lid_velocity=float(values["lid_velocity"]),
+        mesh_cells=_require_int(values, "mesh_cells"),
+        sample_points=_require_int(values, "sample_points"),
+        time_step=_require_float(values, "time_step"),
+        final_time=_require_float(values, "final_time"),
+        lid_velocity=_require_float(values, "lid_velocity"),
         reynolds_numbers=reynolds_numbers,
-        newton_rtol=float(values["newton_rtol"]),
-        newton_atol=float(values["newton_atol"]),
-        newton_max_it=int(values["newton_max_it"]),
-        ksp_type=str(values["ksp_type"]),
-        pc_type=str(values["pc_type"]),
-        quiver_stride=int(values["quiver_stride"]),
-        frame_stride=int(values["frame_stride"]),
-        gif_fps=int(values["gif_fps"]),
+        newton_rtol=_require_float(values, "newton_rtol"),
+        newton_atol=_require_float(values, "newton_atol"),
+        newton_max_it=_require_int(values, "newton_max_it"),
+        ksp_type=_require_str(values, "ksp_type"),
+        pc_type=_require_str(values, "pc_type"),
+        quiver_stride=_require_int(values, "quiver_stride"),
+        frame_stride=_require_int(values, "frame_stride"),
+        gif_fps=_require_int(values, "gif_fps"),
     )
 
 

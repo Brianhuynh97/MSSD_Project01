@@ -1,12 +1,19 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Protocol, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 
 from cavity_case_io import read_parameters
+
+
+class _CanvasWithBufferRGBA(Protocol):
+    def draw(self) -> None: ...
+
+    def buffer_rgba(self) -> memoryview: ...
 
 
 def load_case_data(output_dir: Path, reynolds_number: int):
@@ -79,8 +86,9 @@ def main():
             frame_fig = render_case_figure(
                 fx, fy, fu, fv, fp, fspeed, reynolds_number, parameters.quiver_stride, time_value=time_value
             )
-            frame_fig.canvas.draw()
-            image = Image.fromarray(np.asarray(frame_fig.canvas.buffer_rgba())[:, :, :3])
+            canvas = cast(_CanvasWithBufferRGBA, frame_fig.canvas)
+            canvas.draw()
+            image = Image.fromarray(np.asarray(canvas.buffer_rgba())[:, :, :3])
             images.append(image)
             plt.close(frame_fig)
 

@@ -23,13 +23,15 @@ def sample_functions_on_grid(domain, velocity, pressure, sample_points: int):
     local_points = []
     local_cells = []
     local_indices = []
+    collision_index = np.int32(0)
 
     for index, point in enumerate(points):
         candidates = geometry.compute_collisions_points(tree, point[None, :])
         colliding = geometry.compute_colliding_cells(domain, candidates, point[None, :])
-        if len(colliding.links(0)) > 0:
+        links = colliding.links(collision_index)
+        if len(links) > 0:
             local_points.append(point)
-            local_cells.append(colliding.links(0)[0])
+            local_cells.append(links[0])
             local_indices.append(index)
 
     velocity_values = None
@@ -78,13 +80,15 @@ def evaluate_function_at_points(function, xy_points: np.ndarray):
     local_points = []
     local_cells = []
     local_indices = []
+    collision_index = np.int32(0)
 
     for index, point in enumerate(points):
         candidates = geometry.compute_collisions_points(tree, point[None, :])
         colliding = geometry.compute_colliding_cells(domain, candidates, point[None, :])
-        if len(colliding.links(0)) > 0:
+        links = colliding.links(collision_index)
+        if len(links) > 0:
             local_points.append(point)
-            local_cells.append(colliding.links(0)[0])
+            local_cells.append(links[0])
             local_indices.append(index)
 
     values = None

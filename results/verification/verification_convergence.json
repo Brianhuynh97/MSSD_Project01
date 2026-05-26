@@ -1,0 +1,95 @@
+{
+  "problem": "manufactured_steady_stokes",
+  "mesh_levels": [
+    8,
+    16,
+    32,
+    64
+  ],
+  "mesh_size_definition": "h = 1 / nx for a uniform unit-square mesh with nx subdivisions per side",
+  "elements": {
+    "velocity": "P2 Lagrange",
+    "pressure": "P1 Lagrange"
+  },
+  "expected_rates": {
+    "velocity_l2_error": 3.0,
+    "velocity_h1_seminorm_error": 2.0,
+    "pressure_l2_error": 2.0
+  },
+  "observed_average_rates": {
+    "velocity_l2_error": 2.9911774840391114,
+    "velocity_h1_seminorm_error": 1.981141380805905,
+    "pressure_l2_error": 3.595820096129126,
+    "divergence_l2_error": 1.9637825999832563
+  },
+  "rate_interpretation": {
+    "velocity_l2_error": "Matches the expected cubic L2 convergence for the P2 velocity space on a smooth Stokes problem.",
+    "velocity_h1_seminorm_error": "Matches the expected quadratic H1-seminorm convergence for the P2 velocity space.",
+    "pressure_l2_error": "Observed pressure convergence is higher than the generic P1 expectation because the manufactured solution uses p = 0 and the small pressure penalty removes the nullspace without changing the exact solution."
+  },
+  "limitations": [
+    "This is a steady manufactured Stokes verification problem, not the nonlinear transient cavity benchmark.",
+    "The divergence norm is included as a diagnostic quantity; its observed rate is not the primary theoretical target here.",
+    "The pressure convergence behavior is specific to this manufactured zero-pressure verification case and should not be interpreted as a universal rate for all cavity or Navier-Stokes runs."
+  ],
+  "csv_file": "results/verification/verification_convergence.csv",
+  "figure_file": "figures/verification/verification_convergence.png",
+  "rows": [
+    {
+      "mesh_cells": 8,
+      "mesh_size_h": 0.125,
+      "ndofs": 659,
+      "linear_iterations": 1,
+      "velocity_l2_error": 0.010519147223815611,
+      "velocity_h1_seminorm_error": 0.6166312259716207,
+      "pressure_l2_error": 0.027558726778624077,
+      "divergence_l2_error": 0.40691356592779515,
+      "velocity_l2_rate": 2.9826098038613913,
+      "velocity_h1_rate": 1.957840071055996,
+      "pressure_l2_rate": 3.636690600833103,
+      "divergence_l2_rate": 1.9202056725089867
+    },
+    {
+      "mesh_cells": 16,
+      "mesh_size_h": 0.0625,
+      "ndofs": 2467,
+      "linear_iterations": 1,
+      "velocity_l2_error": 0.0013308389933169792,
+      "velocity_h1_seminorm_error": 0.1587292358012464,
+      "pressure_l2_error": 0.0022156756932833663,
+      "divergence_l2_error": 0.10751341668655105,
+      "velocity_l2_rate": 2.993000613513143,
+      "velocity_h1_rate": 1.988543253872899,
+      "pressure_l2_rate": 3.594997068497438,
+      "divergence_l2_rate": 1.9771591998343936
+    },
+    {
+      "mesh_cells": 32,
+      "mesh_size_h": 0.03125,
+      "ndofs": 9539,
+      "linear_iterations": 1,
+      "velocity_l2_error": 0.00016716392331188708,
+      "velocity_h1_seminorm_error": 0.03999868910780745,
+      "pressure_l2_error": 0.00018335984848682203,
+      "divergence_l2_error": 0.027307279671626068,
+      "velocity_l2_rate": 2.9979220347427993,
+      "velocity_h1_rate": 1.9970408174888201,
+      "pressure_l2_rate": 3.5557726190568366,
+      "divergence_l2_rate": 1.9939829276063892
+    },
+    {
+      "mesh_cells": 64,
+      "mesh_size_h": 0.015625,
+      "ndofs": 37507,
+      "linear_iterations": 1,
+      "velocity_l2_error": 2.092560862099632e-05,
+      "velocity_h1_seminorm_error": 0.010020204144648522,
+      "pressure_l2_error": 1.5592294370289228e-05,
+      "divergence_l2_error": 0.00685535210867248,
+      "velocity_l2_rate": "",
+      "velocity_h1_rate": "",
+      "pressure_l2_rate": "",
+      "divergence_l2_rate": ""
+    }
+  ]
+}
