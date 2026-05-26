@@ -48,7 +48,7 @@ and animations reproduce the classical lid-driven cavity benchmark behavior.
 
 The code solves the incompressible Navier–Stokes equations on the unit square:
 
-$$
+```math
 \frac{\partial \mathbf{u}}{\partial t}
 +
 (\mathbf{u}\cdot\nabla)\mathbf{u}
@@ -58,11 +58,11 @@ $$
 \nabla p
 =
 0
-$$
+```
 
-$$
+```math
 \nabla \cdot \mathbf{u} = 0
-$$
+```
 
 where:
 
