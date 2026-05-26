@@ -115,55 +115,421 @@ convective term is solved using Newton iterations.
 
 ---
 
-## Weak Formulation
+# Weak Formulation of the Lid-Driven Cavity Navier–Stokes Problem
 
-For each time step, the unknown mixed solution
+## Strong Form
 
-\[
-w = (u, p)
-\]
+The incompressible Navier–Stokes equations on the domain
 
-satisfies the weak residual form
+$$
+\Omega = [0,1]^2
+$$
 
-\[
-F(w) =
-\frac{1}{\Delta t}(u-u_n, v)
+are:
+
+### Momentum equation
+
+$$
+\frac{\partial \mathbf{u}}{\partial t}
 +
-\nu (\nabla u, \nabla v)
-+
-((u \cdot \nabla)u, v)
+(\mathbf{u}\cdot\nabla)\mathbf{u}
 -
-(p, \nabla \cdot v)
+\nu \Delta \mathbf{u}
 +
-(q, \nabla \cdot u)
-+
-\epsilon (p,q)
-\]
+\nabla p
+=
+0
+\qquad \text{in } \Omega
+$$
+
+### Continuity equation
+
+$$
+\nabla \cdot \mathbf{u}
+=
+0
+\qquad \text{in } \Omega
+$$
 
 where:
 
-- \(u\) is the velocity field,
-- \(u_n\) is the velocity from the previous time step,
-- \(p\) is the pressure field,
-- \(v\) is the velocity test function,
-- \(q\) is the pressure test function,
-- \(\nu\) is the kinematic viscosity,
-- \(\Delta t\) is the time step size,
-- \(\epsilon\) is a small pressure stabilization parameter.
+- $\mathbf{u} = (u_x,u_y)$ is the velocity field,
+- $p$ is the pressure field,
+- $\nu$ is the kinematic viscosity.
 
-The individual terms represent:
+---
 
-1. transient term,
-2. viscous diffusion,
-3. nonlinear convection,
-4. pressure coupling,
-5. incompressibility constraint,
-6. pressure stabilization.
+# Boundary Conditions
 
-The Jacobian matrix is obtained automatically using UFL differentiation:
+## Moving lid (top boundary)
+
+$$
+\mathbf{u} = (1,0)
+\qquad \text{on } y=1
+$$
+
+## No-slip walls
+
+$$
+\mathbf{u} = (0,0)
+\qquad \text{on } x=0,\ x=1,\ y=0
+$$
+
+---
+
+# Time Discretization
+
+The project uses the backward Euler method.
+
+The time derivative is approximated as
+
+$$
+\frac{\partial \mathbf{u}}{\partial t}
+\approx
+\frac{\mathbf{u}^{n+1}-\mathbf{u}^n}{\Delta t}
+$$
+
+where:
+
+- $\mathbf{u}^{n+1}$ is the unknown velocity at the new time step,
+- $\mathbf{u}^n$ is the velocity from the previous time step,
+- $\Delta t$ is the time step size.
+
+Substituting into the momentum equation gives:
+
+$$
+\frac{\mathbf{u}^{n+1}-\mathbf{u}^n}{\Delta t}
++
+(\mathbf{u}^{n+1}\cdot\nabla)\mathbf{u}^{n+1}
+-
+\nu \Delta \mathbf{u}^{n+1}
++
+\nabla p^{n+1}
+=
+0
+$$
+
+For simplicity, define:
+
+$$
+\mathbf{u} = \mathbf{u}^{n+1},
+\qquad
+\mathbf{u}_n = \mathbf{u}^{n}
+$$
+
+Then:
+
+$$
+\frac{\mathbf{u}-\mathbf{u}_n}{\Delta t}
++
+(\mathbf{u}\cdot\nabla)\mathbf{u}
+-
+\nu \Delta \mathbf{u}
++
+\nabla p
+=
+0
+$$
+
+---
+
+# Derivation of the Weak Form
+
+We introduce:
+
+- velocity test function $\mathbf{v}$,
+- pressure test function $q$.
+
+Multiply the momentum equation by $\mathbf{v}$ and integrate over the domain:
+
+$$
+\int_\Omega
+\left(
+\frac{\mathbf{u}-\mathbf{u}_n}{\Delta t}
+\right)
+\cdot
+\mathbf{v}
+\ d\Omega
+$$
+
+$$
++
+\int_\Omega
+((\mathbf{u}\cdot\nabla)\mathbf{u})
+\cdot
+\mathbf{v}
+\ d\Omega
+$$
+
+$$
+-
+\nu
+\int_\Omega
+(\Delta \mathbf{u})
+\cdot
+\mathbf{v}
+\ d\Omega
+$$
+
+$$
++
+\int_\Omega
+(\nabla p)\cdot \mathbf{v}
+\ d\Omega
+=
+0
+$$
+
+---
+
+# Integration by Parts
+
+The viscous term contains second derivatives:
+
+$$
+-\nu \int_\Omega (\Delta \mathbf{u})\cdot \mathbf{v}\ d\Omega
+$$
+
+Using integration by parts:
+
+$$
+-\int_\Omega (\Delta \mathbf{u})\cdot \mathbf{v}
+=
+\int_\Omega \nabla \mathbf{u} : \nabla \mathbf{v}
+-
+\int_{\partial\Omega}
+\frac{\partial \mathbf{u}}{\partial n}
+\cdot
+\mathbf{v}
+$$
+
+Because Dirichlet velocity boundary conditions are imposed strongly, the boundary term vanishes.
+
+Thus the viscous contribution becomes:
+
+$$
+\nu
+\int_\Omega
+\nabla \mathbf{u}
+:
+\nabla \mathbf{v}
+\ d\Omega
+$$
+
+---
+
+# Pressure Term
+
+For the pressure gradient term:
+
+$$
+\int_\Omega
+(\nabla p)\cdot \mathbf{v}
+\ d\Omega
+$$
+
+integration by parts gives:
+
+$$
+-
+\int_\Omega
+p(\nabla\cdot \mathbf{v})
+\ d\Omega
++
+\int_{\partial\Omega}
+p\mathbf{v}\cdot n
+\ dS
+$$
+
+Again the boundary contribution vanishes, giving:
+
+$$
+-
+\int_\Omega
+p(\nabla\cdot \mathbf{v})
+\ d\Omega
+$$
+
+---
+
+# Continuity Equation
+
+The incompressibility constraint is multiplied by the pressure test function $q$:
+
+$$
+\int_\Omega
+q(\nabla\cdot \mathbf{u})
+\ d\Omega
+=
+0
+$$
+
+---
+
+# Pressure Stabilization
+
+The implementation also adds a small pressure stabilization term:
+
+$$
+\epsilon
+\int_\Omega
+pq
+\ d\Omega
+$$
+
+where:
+
+$$
+\epsilon \ll 1
+$$
+
+This helps numerical robustness and pressure uniqueness.
+
+---
+
+# Final Weak Form
+
+The final weak formulation is:
+
+Find
+
+$$
+(\mathbf{u},p)
+\in
+V \times Q
+$$
+
+such that for all test functions
+
+$$
+(\mathbf{v},q)
+\in
+V \times Q
+$$
+
+the following equation holds:
+
+$$
+F(\mathbf{u},p;\mathbf{v},q)
+=
+0
+$$
+
+with
+
+$$
+F(\mathbf{u},p;\mathbf{v},q)
+=
+\frac{1}{\Delta t}
+(\mathbf{u}-\mathbf{u}_n,\mathbf{v})
+$$
+
+$$
++
+\nu
+(\nabla \mathbf{u},\nabla \mathbf{v})
+$$
+
+$$
++
+((\mathbf{u}\cdot\nabla)\mathbf{u},\mathbf{v})
+$$
+
+$$
+-
+(p,\nabla\cdot\mathbf{v})
+$$
+
+$$
++
+(q,\nabla\cdot\mathbf{u})
+$$
+
+$$
++
+\epsilon(p,q)
+$$
+
+where the inner product notation means:
+
+$$
+(a,b)
+=
+\int_\Omega
+a b
+\ d\Omega
+$$
+
+or for vector fields:
+
+$$
+(\mathbf{a},\mathbf{b})
+=
+\int_\Omega
+\mathbf{a}\cdot\mathbf{b}
+\ d\Omega
+$$
+
+---
+
+# Finite Element Spaces
+
+The project uses Taylor–Hood finite elements:
+
+## Velocity space
+
+$$
+V_h =
+[P_2]^2
+$$
+
+quadratic Lagrange elements.
+
+## Pressure space
+
+$$
+Q_h =
+P_1
+$$
+
+linear Lagrange elements.
+
+This combination satisfies the inf-sup (LBB) stability condition.
+
+---
+
+# Nonlinear Problem
+
+Because of the convection term
+
+$$
+(\mathbf{u}\cdot\nabla)\mathbf{u}
+$$
+
+the weak form is nonlinear.
+
+The project therefore solves:
+
+$$
+F(w)=0
+$$
+
+using Newton's method.
+
+Define the mixed solution:
+
+$$
+w=(\mathbf{u},p)
+$$
+
+The Jacobian is computed automatically in UFL as:
 
 ```python
 jacobian = ufl.derivative(residual, w, dw)
+```
+
+and the nonlinear system is solved using PETSc SNES Newton solvers.
+
 ---
 
 # Environment
