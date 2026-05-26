@@ -115,17 +115,11 @@ convective term is solved using Newton iterations.
 
 ---
 
-# Weak Formulation of the Lid-Driven Cavity Navier–Stokes Problem
+# Weak Formulation of the Incompressible Navier–Stokes Equations
 
 ## Strong Form
 
-The incompressible Navier–Stokes equations on the domain
-
-$$
-\Omega = [0,1]^2
-$$
-
-are:
+The incompressible Navier–Stokes equations on the domain $\Omega$ are
 
 ### Momentum equation
 
@@ -161,7 +155,7 @@ where:
 
 # Boundary Conditions
 
-## Moving lid (top boundary)
+## Moving lid
 
 $$
 \mathbf{u} = (1,0)
@@ -179,26 +173,18 @@ $$
 
 # Time Discretization
 
-The project uses the backward Euler method.
-
-The time derivative is approximated as
+Using backward Euler:
 
 $$
 \frac{\partial \mathbf{u}}{\partial t}
 \approx
-\frac{\mathbf{u}^{n+1}-\mathbf{u}^n}{\Delta t}
+\frac{\mathbf{u}^{n+1}-\mathbf{u}^{n}}{\Delta t}
 $$
-
-where:
-
-- $\mathbf{u}^{n+1}$ is the unknown velocity at the new time step,
-- $\mathbf{u}^n$ is the velocity from the previous time step,
-- $\Delta t$ is the time step size.
 
 Substituting into the momentum equation gives:
 
 $$
-\frac{\mathbf{u}^{n+1}-\mathbf{u}^n}{\Delta t}
+\frac{\mathbf{u}^{n+1}-\mathbf{u}^{n}}{\Delta t}
 +
 (\mathbf{u}^{n+1}\cdot\nabla)\mathbf{u}^{n+1}
 -
@@ -209,10 +195,10 @@ $$
 0
 $$
 
-For simplicity, define:
+Define:
 
 $$
-\mathbf{u} = \mathbf{u}^{n+1},
+\mathbf{u} = \mathbf{u}^{n+1}
 \qquad
 \mathbf{u}_n = \mathbf{u}^{n}
 $$
@@ -233,9 +219,9 @@ $$
 
 ---
 
-# Derivation of the Weak Form
+# Weak Form Derivation
 
-We introduce:
+Introduce:
 
 - velocity test function $\mathbf{v}$,
 - pressure test function $q$.
@@ -243,10 +229,8 @@ We introduce:
 Multiply the momentum equation by $\mathbf{v}$ and integrate over the domain:
 
 $$
-\int_\Omega
-\left(
+\int_{\Omega}
 \frac{\mathbf{u}-\mathbf{u}_n}{\Delta t}
-\right)
 \cdot
 \mathbf{v}
 \ d\Omega
@@ -254,7 +238,7 @@ $$
 
 $$
 +
-\int_\Omega
+\int_{\Omega}
 ((\mathbf{u}\cdot\nabla)\mathbf{u})
 \cdot
 \mathbf{v}
@@ -264,7 +248,7 @@ $$
 $$
 -
 \nu
-\int_\Omega
+\int_{\Omega}
 (\Delta \mathbf{u})
 \cdot
 \mathbf{v}
@@ -273,8 +257,10 @@ $$
 
 $$
 +
-\int_\Omega
-(\nabla p)\cdot \mathbf{v}
+\int_{\Omega}
+(\nabla p)
+\cdot
+\mathbf{v}
 \ d\Omega
 =
 0
@@ -282,34 +268,48 @@ $$
 
 ---
 
-# Integration by Parts
+# Integration by Parts of the Diffusion Term
 
-The viscous term contains second derivatives:
-
-$$
--\nu \int_\Omega (\Delta \mathbf{u})\cdot \mathbf{v}\ d\Omega
-$$
-
-Using integration by parts:
+The viscous term is:
 
 $$
--\int_\Omega (\Delta \mathbf{u})\cdot \mathbf{v}
+-\nu
+\int_{\Omega}
+(\Delta \mathbf{u})
+\cdot
+\mathbf{v}
+\ d\Omega
+$$
+
+Applying integration by parts:
+
+$$
+-\int_{\Omega}
+(\Delta \mathbf{u})
+\cdot
+\mathbf{v}
+\ d\Omega
 =
-\int_\Omega \nabla \mathbf{u} : \nabla \mathbf{v}
+\int_{\Omega}
+\nabla \mathbf{u}
+:
+\nabla \mathbf{v}
+\ d\Omega
 -
 \int_{\partial\Omega}
 \frac{\partial \mathbf{u}}{\partial n}
 \cdot
 \mathbf{v}
+\ dS
 $$
 
-Because Dirichlet velocity boundary conditions are imposed strongly, the boundary term vanishes.
+Since Dirichlet boundary conditions are imposed strongly, the boundary term vanishes.
 
 Thus the viscous contribution becomes:
 
 $$
 \nu
-\int_\Omega
+\int_{\Omega}
 \nabla \mathbf{u}
 :
 \nabla \mathbf{v}
@@ -320,33 +320,36 @@ $$
 
 # Pressure Term
 
-For the pressure gradient term:
+The pressure gradient term is:
 
 $$
-\int_\Omega
-(\nabla p)\cdot \mathbf{v}
+\int_{\Omega}
+(\nabla p)
+\cdot
+\mathbf{v}
 \ d\Omega
 $$
 
-integration by parts gives:
+Applying integration by parts:
 
 $$
+=
 -
-\int_\Omega
-p(\nabla\cdot \mathbf{v})
+\int_{\Omega}
+p(\nabla\cdot\mathbf{v})
 \ d\Omega
 +
 \int_{\partial\Omega}
-p\mathbf{v}\cdot n
+p\mathbf{v}\cdot\mathbf{n}
 \ dS
 $$
 
-Again the boundary contribution vanishes, giving:
+Again the boundary term vanishes, leaving:
 
 $$
 -
-\int_\Omega
-p(\nabla\cdot \mathbf{v})
+\int_{\Omega}
+p(\nabla\cdot\mathbf{v})
 \ d\Omega
 $$
 
@@ -354,11 +357,11 @@ $$
 
 # Continuity Equation
 
-The incompressibility constraint is multiplied by the pressure test function $q$:
+Multiply incompressibility by the pressure test function $q$:
 
 $$
-\int_\Omega
-q(\nabla\cdot \mathbf{u})
+\int_{\Omega}
+q(\nabla\cdot\mathbf{u})
 \ d\Omega
 =
 0
@@ -368,11 +371,11 @@ $$
 
 # Pressure Stabilization
 
-The implementation also adds a small pressure stabilization term:
+The implementation also adds a small stabilization term:
 
 $$
 \epsilon
-\int_\Omega
+\int_{\Omega}
 pq
 \ d\Omega
 $$
@@ -383,13 +386,9 @@ $$
 \epsilon \ll 1
 $$
 
-This helps numerical robustness and pressure uniqueness.
-
 ---
 
 # Final Weak Form
-
-The final weak formulation is:
 
 Find
 
@@ -399,7 +398,7 @@ $$
 V \times Q
 $$
 
-such that for all test functions
+such that for all
 
 $$
 (\mathbf{v},q)
@@ -410,9 +409,7 @@ $$
 the following equation holds:
 
 $$
-F(\mathbf{u},p;\mathbf{v},q)
-=
-0
+F(\mathbf{u},p;\mathbf{v},q)=0
 $$
 
 with
@@ -427,7 +424,7 @@ $$
 $$
 +
 \nu
-(\nabla \mathbf{u},\nabla \mathbf{v})
+(\nabla\mathbf{u},\nabla\mathbf{v})
 $$
 
 $$
@@ -455,17 +452,17 @@ where the inner product notation means:
 $$
 (a,b)
 =
-\int_\Omega
-a b
+\int_{\Omega}
+ab
 \ d\Omega
 $$
 
-or for vector fields:
+and for vector fields:
 
 $$
 (\mathbf{a},\mathbf{b})
 =
-\int_\Omega
+\int_{\Omega}
 \mathbf{a}\cdot\mathbf{b}
 \ d\Omega
 $$
@@ -474,31 +471,29 @@ $$
 
 # Finite Element Spaces
 
-The project uses Taylor–Hood finite elements:
+The project uses Taylor–Hood finite elements.
 
 ## Velocity space
 
 $$
-V_h =
-[P_2]^2
+V_h = [P_2]^2
 $$
 
-quadratic Lagrange elements.
+Quadratic Lagrange elements.
 
 ## Pressure space
 
 $$
-Q_h =
-P_1
+Q_h = P_1
 $$
 
-linear Lagrange elements.
+Linear Lagrange elements.
 
-This combination satisfies the inf-sup (LBB) stability condition.
+These satisfy the inf-sup (LBB) stability condition.
 
 ---
 
-# Nonlinear Problem
+# Nonlinear System
 
 Because of the convection term
 
@@ -508,27 +503,19 @@ $$
 
 the weak form is nonlinear.
 
-The project therefore solves:
-
-$$
-F(w)=0
-$$
-
-using Newton's method.
-
 Define the mixed solution:
 
 $$
 w=(\mathbf{u},p)
 $$
 
-The Jacobian is computed automatically in UFL as:
+The nonlinear system is:
 
-```python
-jacobian = ufl.derivative(residual, w, dw)
-```
+$$
+F(w)=0
+$$
 
-and the nonlinear system is solved using PETSc SNES Newton solvers.
+and is solved using Newton's method.
 
 ---
 
