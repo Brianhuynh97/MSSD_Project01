@@ -50,10 +50,14 @@ The code solves the incompressible Navier–Stokes equations on the unit square:
 
 $$
 \frac{\partial \mathbf{u}}{\partial t}
-+ (\mathbf{u} \cdot \nabla)\mathbf{u}
-- \nu \Delta \mathbf{u}
-+ \nabla p
-= 0
++
+(\mathbf{u} \cdot \nabla)\mathbf{u}
+-
+\nu \Delta \mathbf{u}
++
+\nabla p
+=
+0
 $$
 
 $$
