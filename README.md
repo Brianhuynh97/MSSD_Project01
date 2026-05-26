@@ -170,15 +170,15 @@ $$
 
 Using the backward Euler method:
 
-$$
+```math
 \frac{\partial \mathbf{u}}{\partial t}
 \approx
 \frac{\mathbf{u}^{n+1}-\mathbf{u}^{n}}{\Delta t}
-$$
+```
 
 Substituting into the momentum equation gives:
 
-$$
+```math
 \frac{\mathbf{u}^{n+1}-\mathbf{u}^{n}}{\Delta t}
 +
 (\mathbf{u}^{n+1}\cdot\nabla)\mathbf{u}^{n+1}
@@ -188,19 +188,19 @@ $$
 \nabla p^{n+1}
 =
 0
-$$
+```
 
 Define
 
-$$
+```math
 \mathbf{u} = \mathbf{u}^{n+1},
 \qquad
 \mathbf{u}_n = \mathbf{u}^{n}
-$$
+```
 
 Then the semi-discrete equation becomes:
 
-$$
+```math
 \frac{\mathbf{u}-\mathbf{u}_n}{\Delta t}
 +
 (\mathbf{u}\cdot\nabla)\mathbf{u}
@@ -210,8 +210,7 @@ $$
 \nabla p
 =
 0
-$$
-
+```
 ---
 
 # Weak Form Derivation
