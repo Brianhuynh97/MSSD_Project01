@@ -1,0 +1,14 @@
+mesh_cells = 40
+sample_points = 51
+time_step = 0.05
+final_time = 4.0
+lid_velocity = 1.0
+reynolds_numbers = 10, 100, 1000, 10000
+newton_rtol = 1.0e-8
+newton_atol = 1.0e-10
+newton_max_it = 20
+ksp_type = preonly
+pc_type = lu
+quiver_stride = 4
+frame_stride = 4
+gif_fps = 6
