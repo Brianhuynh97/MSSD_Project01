@@ -1,0 +1,3 @@
+variant,notch_radius,mesh_file,num_cells,num_vertices,ndofs,linear_iterations,pressure_drop,max_speed,outlet_flow_rate
+mild,0.18,results/physical_study/meshes/constricted_channel_mild.msh,10224,5285,46871,1,1.2452254216009209,2.1520118096044074,0.9999999757268713
+severe,0.3,results/physical_study/meshes/constricted_channel_severe.msh,12844,6630,58836,1,2.5554923939699266,3.566220606169182,0.9999999524991707

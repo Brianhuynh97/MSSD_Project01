@@ -1,5 +1,5 @@
 {
-  "scenario": "steady low-Re channel flow through a symmetric stenosis",
+  "scenario": "steady low-Re channel flow through a symmetric channel constriction",
   "mesh_generation": "Gmsh Python API with gmsh.model.occ",
   "mesh_import": "dolfinx.io.gmsh.read_from_msh",
   "mesh_size_control": "variant-specific global mesh size with local threshold refinement near tagged walls",
@@ -14,7 +14,7 @@
     {
       "variant": "mild",
       "notch_radius": 0.18,
-      "mesh_file": "results/physical_study/meshes/stenosis_mild.msh",
+      "mesh_file": "results/physical_study/meshes/constricted_channel_mild.msh",
       "num_cells": 10224,
       "num_vertices": 5285,
       "ndofs": 46871,
@@ -26,7 +26,7 @@
     {
       "variant": "severe",
       "notch_radius": 0.3,
-      "mesh_file": "results/physical_study/meshes/stenosis_severe.msh",
+      "mesh_file": "results/physical_study/meshes/constricted_channel_severe.msh",
       "num_cells": 12844,
       "num_vertices": 6630,
       "ndofs": 58836,
@@ -40,9 +40,9 @@
     "better_variant": "mild",
     "reason": "Lower pressure drop at the same inlet profile indicates lower hydraulic resistance.",
     "physical_reading": [
-      "The severe stenosis creates a narrower throat, accelerating the flow and increasing viscous losses.",
+      "The severe constriction creates a narrower throat, accelerating the flow and increasing viscous losses.",
       "Pressure gradients concentrate across the throat, while high-speed regions form through the constriction.",
-      "The mild stenosis performs better for the pressure-drop metric because the channel cross-section remains less restrictive."
+      "The mild constriction performs better for the pressure-drop metric because the channel cross-section remains less restrictive."
     ]
   }
 }

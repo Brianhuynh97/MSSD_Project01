@@ -11,7 +11,7 @@ WALL_TAG = 3
 
 
 @dataclass(frozen=True)
-class StenosisVariant:
+class ChannelVariant:
     name: str
     notch_radius: float
     mesh_size: float
@@ -22,17 +22,17 @@ CHANNEL_HEIGHT = 1.0
 STENOSIS_CENTER_X = 2.0
 
 VARIANTS = {
-    "mild": StenosisVariant("mild", notch_radius=0.18, mesh_size=0.07),
-    "severe": StenosisVariant("severe", notch_radius=0.30, mesh_size=0.06),
+    "mild": ChannelVariant("mild", notch_radius=0.18, mesh_size=0.07),
+    "severe": ChannelVariant("severe", notch_radius=0.30, mesh_size=0.06),
 }
 
 
-def build_stenosis_mesh(mesh_file: Path, variant: StenosisVariant) -> Path:
+def build_constricted_channel_mesh(mesh_file: Path, variant: ChannelVariant) -> Path:
     import gmsh
 
     gmsh.initialize()
     gmsh.option.setNumber("General.Terminal", 0)
-    gmsh.model.add(f"stenosis_{variant.name}")
+    gmsh.model.add(f"constricted_channel_{variant.name}")
 
     rectangle = gmsh.model.occ.addRectangle(0.0, 0.0, 0.0, CHANNEL_LENGTH, CHANNEL_HEIGHT)
     bottom_notch = gmsh.model.occ.addDisk(
@@ -100,7 +100,7 @@ def build_stenosis_mesh(mesh_file: Path, variant: StenosisVariant) -> Path:
 
 def generate_all_meshes(mesh_dir: Path) -> dict[str, Path]:
     return {
-        name: build_stenosis_mesh(mesh_dir / f"stenosis_{name}.msh", variant)
+        name: build_constricted_channel_mesh(mesh_dir / f"constricted_channel_{name}.msh", variant)
         for name, variant in VARIANTS.items()
     }
 

@@ -10,7 +10,7 @@ import matplotlib.tri as mtri
 import numpy as np
 
 from cavity_solution_sampling import configure_cache_dirs
-from generate_stenosis_mesh import (
+from generate_constricted_channel_mesh import (
     CHANNEL_HEIGHT,
     CHANNEL_LENGTH,
     INLET_TAG,
@@ -109,7 +109,7 @@ def build_stokes_problem(domain, facet_tags, variant_name: str):
         a,
         L,
         bcs=bcs,
-        petsc_options_prefix=f"stenosis_{variant_name}_",
+        petsc_options_prefix=f"constricted_channel_{variant_name}_",
         petsc_options={
             "ksp_type": "preonly",
             "pc_type": "lu",
@@ -286,7 +286,7 @@ def plot_fields(sample: dict[str, np.ndarray], result: StudyResult):
     fig.colorbar(pressure_contour, ax=pressure_ax, fraction=0.046, pad=0.02)
 
     fig.suptitle(
-        f"{result.variant.capitalize()} stenosis: Δp={result.pressure_drop:.3f}, max|u|={result.max_speed:.3f}",
+        f"{result.variant.capitalize()} constriction: Δp={result.pressure_drop:.3f}, max|u|={result.max_speed:.3f}",
         fontsize=13,
     )
     fig.tight_layout()
@@ -315,8 +315,8 @@ def plot_comparison(results: list[StudyResult]):
 
 def write_outputs(results: list[StudyResult]):
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    summary_path = RESULTS_DIR / "stenosis_summary.json"
-    csv_path = RESULTS_DIR / "stenosis_summary.csv"
+    summary_path = RESULTS_DIR / "constricted_channel_summary.json"
+    csv_path = RESULTS_DIR / "constricted_channel_summary.csv"
 
     with csv_path.open("w", encoding="utf-8", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=list(asdict(results[0]).keys()))
@@ -325,7 +325,7 @@ def write_outputs(results: list[StudyResult]):
 
     better_variant = min(results, key=lambda result: result.pressure_drop)
     summary = {
-        "scenario": "steady low-Re channel flow through a symmetric stenosis",
+        "scenario": "steady low-Re channel flow through a symmetric channel constriction",
         "mesh_generation": "Gmsh Python API with gmsh.model.occ",
         "mesh_import": "dolfinx.io.gmsh.read_from_msh",
         "mesh_size_control": "variant-specific global mesh size with local threshold refinement near tagged walls",
@@ -341,9 +341,9 @@ def write_outputs(results: list[StudyResult]):
             "better_variant": better_variant.variant,
             "reason": "Lower pressure drop at the same inlet profile indicates lower hydraulic resistance.",
             "physical_reading": [
-                "The severe stenosis creates a narrower throat, accelerating the flow and increasing viscous losses.",
+                "The severe constriction creates a narrower throat, accelerating the flow and increasing viscous losses.",
                 "Pressure gradients concentrate across the throat, while high-speed regions form through the constriction.",
-                "The mild stenosis performs better for the pressure-drop metric because the channel cross-section remains less restrictive.",
+                "The mild constriction performs better for the pressure-drop metric because the channel cross-section remains less restrictive.",
             ],
         },
     }
