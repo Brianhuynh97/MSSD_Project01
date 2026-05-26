@@ -42,6 +42,14 @@ and animations reproduce the classical lid-driven cavity benchmark behavior.
   Solves a manufactured steady Stokes problem on a sequence of meshes and
   computes exact error norms for verification.
 
+- `generate_stenosis_mesh.py`  
+  Builds reproducible Gmsh meshes for a stenosed channel with physical facet
+  tags for inlet, outlet, and walls.
+
+- `run_stenosis_study.py`  
+  Solves a tagged low-Re channel-flow problem for two stenosis variants and
+  compares pressure drop and peak speed.
+
 - `cavity_solver_config.txt`  
   Stores Reynolds numbers, mesh size, time step, solver tolerances,
   PETSc configuration, and plotting settings.
@@ -206,6 +214,12 @@ python run_cavity_convergence.py
 python run_verification_convergence.py
 ```
 
+## Run physical stenosis study
+
+```bash
+python run_stenosis_study.py
+```
+
 ---
 
 # Results
@@ -275,6 +289,18 @@ Verification outputs:
 - `results/verification/verification_convergence.json`
 - `figures/verification/verification_convergence.png`
 
+Physical-study outputs:
+
+- `results/physical_study/meshes/stenosis_mild.msh`
+- `results/physical_study/meshes/stenosis_severe.msh`
+- `results/physical_study/stenosis_summary.csv`
+- `results/physical_study/stenosis_summary.json`
+- `figures/physical_study/mild_mesh_tags.png`
+- `figures/physical_study/mild_fields.png`
+- `figures/physical_study/severe_mesh_tags.png`
+- `figures/physical_study/severe_fields.png`
+- `figures/physical_study/variant_comparison.png`
+
 ---
 
 # Verification Study
@@ -336,6 +362,86 @@ manufactured verification case uses an exact zero-pressure field together with
 a small pressure penalty to remove the nullspace. That behavior is specific to
 this verification setup and should not be treated as a universal cavity-flow
 pressure rate.
+
+---
+
+# Physical Study: Stenosed Channel Flow
+
+To move beyond the idealized lid-driven cavity, the project now includes a more
+realistic internal-flow scenario: a 2D channel with a symmetric constriction
+representing a mild or severe stenosis.
+
+## Reproducible geometry and tags
+
+The geometry is generated with the Gmsh Python API through
+`gmsh.model.occ`. No GUI-only meshing steps are required.
+
+- Base geometry: rectangle of length `4` and height `1`
+- Constriction: two semicircular wall intrusions centered at `x = 2`
+- Variants:
+  - mild stenosis: radius `0.18`
+  - severe stenosis: radius `0.30`
+
+Facet tags are assigned reproducibly in the mesh script:
+
+- inlet: tag `1`
+- outlet: tag `2`
+- walls: tag `3`
+
+The mesh is imported into FEniCSx using:
+
+```python
+from dolfinx.io import gmsh
+mesh_data = gmsh.read_from_msh(...)
+```
+
+## Controlled comparison
+
+Both variants are solved under the same conditions:
+
+- steady incompressible Stokes flow
+- Taylor–Hood `P2/P1` discretization
+- parabolic inlet profile with mean speed `1.0`
+- no-slip walls
+- natural outlet with pressure determined up to a small penalty regularization
+
+## Quantities of interest
+
+The primary quantity of interest is:
+
+- pressure drop = average inlet pressure minus average outlet pressure
+
+Secondary quantities are:
+
+- maximum speed on a reproducible sampling grid
+- outlet flow rate
+
+## Current results
+
+From [results/physical_study/stenosis_summary.json](/Users/brianhuynh/Project01_MSSD/results/physical_study/stenosis_summary.json:1):
+
+- mild stenosis:
+  - pressure drop `1.245225`
+  - maximum speed `2.152012`
+  - outlet flow rate `1.000000`
+- severe stenosis:
+  - pressure drop `2.555492`
+  - maximum speed `3.566221`
+  - outlet flow rate `1.000000`
+
+## Physical interpretation
+
+The severe stenosis performs worse with respect to the pressure-drop metric.
+Its narrower throat accelerates the flow more strongly, which raises the local
+speed and steepens the pressure gradient through the constriction. The mesh and
+field figures show the main physical structures:
+
+- high-speed core through the throat
+- strong pressure change across the constriction
+- concentrated wall effects near the narrowed region
+
+The mild stenosis performs better because it delivers the same outlet flow with
+substantially lower hydraulic resistance.
 
 ---
 
