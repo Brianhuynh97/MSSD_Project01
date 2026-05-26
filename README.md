@@ -222,38 +222,38 @@ Introduce:
 
 Multiply the momentum equation by $\mathbf{v}$ and integrate over the domain:
 
-$$
+```math
 \int_{\Omega}
 \frac{\mathbf{u}-\mathbf{u}_n}{\Delta t}
 \cdot \mathbf{v}
 \ d\Omega
-$$
+```
 
-$$
+```math
 +
 \int_{\Omega}
 ((\mathbf{u}\cdot\nabla)\mathbf{u})
 \cdot \mathbf{v}
 \ d\Omega
-$$
+```
 
-$$
+```math
 -
 \nu
 \int_{\Omega}
 (\Delta \mathbf{u})
 \cdot \mathbf{v}
 \ d\Omega
-$$
+```
 
-$$
+```math
 +
 \int_{\Omega}
 (\nabla p)\cdot \mathbf{v}
 \ d\Omega
 =
 0
-$$
+```
 
 ---
 
@@ -261,17 +261,17 @@ $$
 
 The viscous term is
 
-$$
+```math
 -\nu
 \int_{\Omega}
 (\Delta \mathbf{u})
 \cdot \mathbf{v}
 \ d\Omega
-$$
+```
 
 Applying integration by parts:
 
-$$
+```math
 -\int_{\Omega}
 (\Delta \mathbf{u})
 \cdot \mathbf{v}
@@ -287,20 +287,20 @@ $$
 \frac{\partial \mathbf{u}}{\partial n}
 \cdot \mathbf{v}
 \ dS
-$$
+```
 
 Since Dirichlet boundary conditions are imposed strongly, the boundary integral vanishes.
 
 Thus the viscous contribution becomes:
 
-$$
+```math
 \nu
 \int_{\Omega}
 \nabla \mathbf{u}
 :
 \nabla \mathbf{v}
 \ d\Omega
-$$
+```
 
 ---
 
@@ -308,15 +308,15 @@ $$
 
 The pressure gradient term is:
 
-$$
+```math
 \int_{\Omega}
 (\nabla p)\cdot \mathbf{v}
 \ d\Omega
-$$
+```
 
 Applying integration by parts gives:
 
-$$
+```math
 \int_{\Omega}
 (\nabla p)\cdot \mathbf{v}
 \ d\Omega
@@ -329,16 +329,16 @@ p(\nabla\cdot\mathbf{v})
 \int_{\partial\Omega}
 p\mathbf{v}\cdot\mathbf{n}
 \ dS
-$$
+```
 
 Again the boundary term vanishes, leaving:
 
-$$
+```math
 -
 \int_{\Omega}
 p(\nabla\cdot\mathbf{v})
 \ d\Omega
-$$
+```
 
 ---
 
@@ -346,14 +346,13 @@ $$
 
 Multiply incompressibility by the pressure test function $q$:
 
-$$
+```math
 \int_{\Omega}
 q(\nabla\cdot\mathbf{u})
 \ d\Omega
 =
 0
-$$
-
+```
 ---
 
 # Pressure Stabilization
