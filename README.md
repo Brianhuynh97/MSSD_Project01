@@ -378,29 +378,29 @@ $$
 
 Find
 
-$$
+```math
 (\mathbf{u},p)
 \in
 V \times Q
-$$
+```
 
 such that for all
 
-$$
+```math
 (\mathbf{v},q)
 \in
 V \times Q
-$$
+```
 
 the following equation holds:
 
-$$
+```math
 F(\mathbf{u},p;\mathbf{v},q)=0
-$$
+```
 
 with
 
-$$
+```math
 F(\mathbf{u},p;\mathbf{v},q)
 =
 \frac{1}{\Delta t}
@@ -416,27 +416,27 @@ F(\mathbf{u},p;\mathbf{v},q)
 (q,\nabla\cdot\mathbf{u})
 +
 \epsilon(p,q)
-$$
+```
 
 where the inner product notation means:
 
-$$
+```math
 (a,b)
 =
 \int_{\Omega}
 ab
 \ d\Omega
-$$
+```
 
 and for vector fields:
 
-$$
+```math
 (\mathbf{a},\mathbf{b})
 =
 \int_{\Omega}
 \mathbf{a}\cdot\mathbf{b}
 \ d\Omega
-$$
+```
 
 ---
 
