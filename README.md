@@ -198,21 +198,29 @@ python run_cavity_convergence.py
 
 ## Reynolds Number Cases
 
-### Re = 10
+## Re = 10
 
-![](figures/lid_driven_cavity_re_00010.gif)
+<p align="center">
+  <img src="figures/lid_driven_cavity_re_00010.gif" width="700"/>
+</p>
 
-### Re = 100
+## Re = 100
 
-![](figures/lid_driven_cavity_re_00100.gif)
+<p align="center">
+  <img src="figures/lid_driven_cavity_re_00100.gif" width="700"/>
+</p>
 
-### Re = 1000
+## Re = 1000
 
-![](figures/lid_driven_cavity_re_01000.gif)
+<p align="center">
+  <img src="figures/lid_driven_cavity_re_01000.gif" width="700"/>
+</p>
 
-### Re = 10000
+## Re = 10000
 
-![](figures/lid_driven_cavity_re_10000.gif)
+<p align="center">
+  <img src="figures/lid_driven_cavity_re_10000.gif" width="700"/>
+</p>
 
 ---
 
