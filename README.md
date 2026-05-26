@@ -119,20 +119,16 @@ convective term is solved using Newton iterations.
 
 ## Strong Form
 
-The incompressible Navier–Stokes equations on the domain $\Omega$ are
+The incompressible Navier–Stokes equations on the domain $\Omega$ are:
 
 ### Momentum equation
 
 $$
 \frac{\partial \mathbf{u}}{\partial t}
-+
-(\mathbf{u}\cdot\nabla)\mathbf{u}
--
-\nu \Delta \mathbf{u}
-+
-\nabla p
-=
-0
++ (\mathbf{u}\cdot\nabla)\mathbf{u}
+- \nu \Delta \mathbf{u}
++ \nabla p
+= 0
 \qquad \text{in } \Omega
 $$
 
@@ -140,8 +136,7 @@ $$
 
 $$
 \nabla \cdot \mathbf{u}
-=
-0
+= 0
 \qquad \text{in } \Omega
 $$
 
@@ -173,7 +168,7 @@ $$
 
 # Time Discretization
 
-Using backward Euler:
+Using the backward Euler method:
 
 $$
 \frac{\partial \mathbf{u}}{\partial t}
@@ -195,15 +190,15 @@ $$
 0
 $$
 
-Define:
+Define
 
 $$
-\mathbf{u} = \mathbf{u}^{n+1}
+\mathbf{u} = \mathbf{u}^{n+1},
 \qquad
 \mathbf{u}_n = \mathbf{u}^{n}
 $$
 
-Then:
+Then the semi-discrete equation becomes:
 
 $$
 \frac{\mathbf{u}-\mathbf{u}_n}{\Delta t}
@@ -231,8 +226,7 @@ Multiply the momentum equation by $\mathbf{v}$ and integrate over the domain:
 $$
 \int_{\Omega}
 \frac{\mathbf{u}-\mathbf{u}_n}{\Delta t}
-\cdot
-\mathbf{v}
+\cdot \mathbf{v}
 \ d\Omega
 $$
 
@@ -240,8 +234,7 @@ $$
 +
 \int_{\Omega}
 ((\mathbf{u}\cdot\nabla)\mathbf{u})
-\cdot
-\mathbf{v}
+\cdot \mathbf{v}
 \ d\Omega
 $$
 
@@ -250,17 +243,14 @@ $$
 \nu
 \int_{\Omega}
 (\Delta \mathbf{u})
-\cdot
-\mathbf{v}
+\cdot \mathbf{v}
 \ d\Omega
 $$
 
 $$
 +
 \int_{\Omega}
-(\nabla p)
-\cdot
-\mathbf{v}
+(\nabla p)\cdot \mathbf{v}
 \ d\Omega
 =
 0
@@ -270,14 +260,13 @@ $$
 
 # Integration by Parts of the Diffusion Term
 
-The viscous term is:
+The viscous term is
 
 $$
 -\nu
 \int_{\Omega}
 (\Delta \mathbf{u})
-\cdot
-\mathbf{v}
+\cdot \mathbf{v}
 \ d\Omega
 $$
 
@@ -286,8 +275,7 @@ Applying integration by parts:
 $$
 -\int_{\Omega}
 (\Delta \mathbf{u})
-\cdot
-\mathbf{v}
+\cdot \mathbf{v}
 \ d\Omega
 =
 \int_{\Omega}
@@ -298,12 +286,11 @@ $$
 -
 \int_{\partial\Omega}
 \frac{\partial \mathbf{u}}{\partial n}
-\cdot
-\mathbf{v}
+\cdot \mathbf{v}
 \ dS
 $$
 
-Since Dirichlet boundary conditions are imposed strongly, the boundary term vanishes.
+Since Dirichlet boundary conditions are imposed strongly, the boundary integral vanishes.
 
 Thus the viscous contribution becomes:
 
@@ -324,15 +311,16 @@ The pressure gradient term is:
 
 $$
 \int_{\Omega}
-(\nabla p)
-\cdot
-\mathbf{v}
+(\nabla p)\cdot \mathbf{v}
 \ d\Omega
 $$
 
-Applying integration by parts:
+Applying integration by parts gives:
 
 $$
+\int_{\Omega}
+(\nabla p)\cdot \mathbf{v}
+\ d\Omega
 =
 -
 \int_{\Omega}
@@ -380,7 +368,7 @@ pq
 \ d\Omega
 $$
 
-where:
+where
 
 $$
 \epsilon \ll 1
@@ -419,30 +407,15 @@ F(\mathbf{u},p;\mathbf{v},q)
 =
 \frac{1}{\Delta t}
 (\mathbf{u}-\mathbf{u}_n,\mathbf{v})
-$$
-
-$$
 +
 \nu
 (\nabla\mathbf{u},\nabla\mathbf{v})
-$$
-
-$$
 +
 ((\mathbf{u}\cdot\nabla)\mathbf{u},\mathbf{v})
-$$
-
-$$
 -
 (p,\nabla\cdot\mathbf{v})
-$$
-
-$$
 +
 (q,\nabla\cdot\mathbf{u})
-$$
-
-$$
 +
 \epsilon(p,q)
 $$
