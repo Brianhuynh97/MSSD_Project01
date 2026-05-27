@@ -16,6 +16,10 @@ class _CanvasWithBufferRGBA(Protocol):
     def buffer_rgba(self) -> memoryview: ...
 
 
+def log_progress(message: str) -> None:
+    print(message, flush=True)
+
+
 def load_case_data(output_dir: Path, reynolds_number: int):
     data = np.load(output_dir / f"re_{reynolds_number:05d}.npz")
     return data["x"], data["y"], data["u"], data["v"], data["p"], data["speed"]
@@ -76,6 +80,7 @@ def main():
     figure_dir.mkdir(exist_ok=True)
 
     for reynolds_number in parameters.reynolds_numbers:
+        log_progress(f"Rendering PNG for Re={reynolds_number}")
         x, y, u, v, p, speed = load_case_data(output_dir, reynolds_number)
         fig = render_case_figure(x, y, u, v, p, speed, reynolds_number, parameters.quiver_stride)
         fig.savefig(figure_dir / f"lid_driven_cavity_re_{reynolds_number:05d}.png", dpi=150)
@@ -83,8 +88,10 @@ def main():
 
         frame_dir = output_dir / f"re_{reynolds_number:05d}_frames"
         frame_files = sorted(frame_dir.glob("frame_*.npz"))
+        log_progress(f"Building GIF for Re={reynolds_number} from {len(frame_files)} frames")
         images = []
-        for frame_file in frame_files:
+        progress_stride = max(1, len(frame_files) // 10)
+        for index, frame_file in enumerate(frame_files, start=1):
             fx, fy, fu, fv, fp, fspeed, time_value = load_frame_data(frame_file)
             frame_fig = render_case_figure(
                 fx, fy, fu, fv, fp, fspeed, reynolds_number, parameters.quiver_stride, time_value=time_value
@@ -94,8 +101,11 @@ def main():
             image = Image.fromarray(np.asarray(canvas.buffer_rgba())[:, :, :3])
             images.append(image)
             plt.close(frame_fig)
+            if index == 1 or index % progress_stride == 0 or index == len(frame_files):
+                log_progress(f"[Re={reynolds_number}] rendered frame {index}/{len(frame_files)}")
 
         if images:
+            log_progress(f"Saving GIF for Re={reynolds_number}")
             images[0].save(
                 figure_dir / f"lid_driven_cavity_re_{reynolds_number:05d}.gif",
                 save_all=True,
@@ -103,6 +113,7 @@ def main():
                 duration=int(1000 / max(parameters.gif_fps, 1)),
                 loop=0,
             )
+            log_progress(f"Finished GIF for Re={reynolds_number}")
 
 
 if __name__ == "__main__":

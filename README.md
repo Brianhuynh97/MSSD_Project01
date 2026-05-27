@@ -507,10 +507,11 @@ The recommended installation route is a conda-forge FEniCSx environment.
 ---
 
 # Run
-
+( it will take 10-15 minutes to solve all cases and generate the figures)
 ## Solve all Reynolds-number cases
 
 ```bash
+conda activate fenicsx-cylinder
 python solve_lid_driven_cavity.py
 ```
 

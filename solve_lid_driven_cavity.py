@@ -9,6 +9,11 @@ from cavity_solution_sampling import configure_cache_dirs, sample_functions_on_g
 from cavity_case_io import read_parameters, write_case_data, write_case_frame
 
 
+def log_progress(domain, message):
+    if domain.comm.rank == 0:
+        print(message, flush=True)
+
+
 def build_domain_and_spaces(parameters):
     from basix.ufl import element, mixed_element
     from dolfinx import fem, mesh
@@ -144,6 +149,7 @@ def solve_time_steps(problem, domain, current_state, previous_state, parameters,
     iteration_history = []
     frame_dir = output_dir / f"re_{reynolds_number:05d}_frames" if output_dir is not None else None
     frame_index = 0
+    progress_stride = max(1, steps // 20)
 
     sampled, _, _ = sample_state(domain, previous_state, parameters.sample_points)
     if save_frames and frame_dir is not None:
@@ -164,6 +170,15 @@ def solve_time_steps(problem, domain, current_state, previous_state, parameters,
         previous_state.x.scatter_forward()
         current_time += parameters.time_step
 
+        if step == 0 or (step + 1) % progress_stride == 0 or step + 1 == steps:
+            log_progress(
+                domain,
+                (
+                    f"[Re={reynolds_number}] step {step + 1}/{steps} "
+                    f"t={current_time:.3f} Newton it={int(iterations)}"
+                ),
+            )
+
         if save_frames and frame_dir is not None and ((step + 1) % parameters.frame_stride == 0 or step + 1 == steps):
             sampled, _, _ = sample_state(domain, current_state, parameters.sample_points)
             frame_index = write_frame_if_needed(frame_dir, frame_index, current_time, sampled)
@@ -173,6 +188,13 @@ def solve_time_steps(problem, domain, current_state, previous_state, parameters,
 
 def solve_case(parameters, reynolds_number, initial_guess=None, output_dir: Path | None = None, save_frames: bool = True):
     domain, mixed_space, velocity_space, pressure_space = build_domain_and_spaces(parameters)
+    log_progress(
+        domain,
+        (
+            f"Starting Re={reynolds_number} "
+            f"(mesh_cells={parameters.mesh_cells}, dt={parameters.time_step}, Tf={parameters.final_time})"
+        ),
+    )
     current_state, previous_state = build_state_functions(mixed_space, initial_guess)
     boundary_conditions = build_boundary_conditions(
         domain, mixed_space, velocity_space, pressure_space, parameters
@@ -209,6 +231,7 @@ def solve_case(parameters, reynolds_number, initial_guess=None, output_dir: Path
         "iteration_history": iteration_history,
     }
     fields = {"domain": domain, "velocity": velocity, "pressure": pressure}
+    log_progress(domain, f"Finished Re={reynolds_number} at t={current_time:.3f}")
     return sampled, metadata, current_state.x.array.copy(), fields
 
 
